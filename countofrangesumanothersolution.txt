@@ -1,0 +1,94 @@
+Planning
+
+This problem is a good example for a segment tree approach. The interval of each segment tree node is not index or nums[i], but prefix sum of nums. prefixSum[i] is the sum of elements from nums[0] to nums[i].
+Range sum S(i,j) can be calculated as prefixSum[j]-prefixSum[i-1]. When j=0, prefixSum[j-1] does not exist, range sum becomes prefixSum[j]-0. Therefore, we should create a zero element before nums[0]. No matter what, there will be a 0 inside prefixSum vector. Therefore, we should initialize minV and maxV to be 0.
+Since i can be equal to j, the question becomes if there exists a prefixSum before prefixSum[j], meet this criteria: lower<=prefixSum[j]-prefixSum[i-1]<=upper. Or we can say if there exists a prefixSum (before prefixSum[j]) inside [prefixSum[j]-upper,prefixSum[j]-lower].
+After calucating prefixSum, we should be able to find its minimum and maximum value: minV and maxV. Can we build a segment tree between [min(prefixSum)-upper, max(prefixSum)-lower]? Not really, because, [prefixSum[j]-upper, prefixSum[j]-lower] is the interval for query, we need to make sure this segment tree covers all range of prefixSum: minV=min(minV,minV-upper); maxV=max(maxV,maxV-lower);
+Then we just need to run a foor loop for prefixSum. Check the total counts in [prefixSum[i]-upper, prefixSum[i]-lower], and update the current element into the segment tree: update(root, prefixSum[i]); For each iteration, S(j,i) represents the range sum ended with nums[i], where j ranges from 0 to i-1.
+Solution
+
+struct SegmentTreeNode{
+    long st;
+    long ed;
+    int count;
+    SegmentTreeNode* left;
+    SegmentTreeNode* right;
+    SegmentTreeNode(long x, long y, int c):st(x),ed(y),count(c),left(nullptr),right(nullptr){}
+    SegmentTreeNode(long x, long y, int c, SegmentTreeNode* l, SegmentTreeNode* r):st(x),ed(y),count(c),left(l),right(r){}
+};
+class Solution {
+private:
+    int queryTree(SegmentTreeNode* root, long minIdx, long maxIdx){
+        int result=0;
+        if(root==nullptr)
+            return 0;
+        long low=root->st, high=root->ed, mid=floor(low+(high-low)/2);
+        if(maxIdx<low || minIdx>high)
+            return 0;
+        else if(low==minIdx && high==maxIdx)
+            return root->count;
+
+        if(maxIdx<=mid)
+            return queryTree(root->left, minIdx, maxIdx);
+        else if(minIdx>mid)
+            return queryTree(root->right, minIdx, maxIdx);
+        else
+            return queryTree(root->left, minIdx, mid)+queryTree(root->right, mid+1, maxIdx);
+    }
+    void update(SegmentTreeNode* root, long pivot){
+        long low=root->st, high=root->ed, mid=floor(low+(high-low)/2);
+        if(low==pivot && high==pivot){
+            root->count++;
+            return;
+        }
+        if(pivot<=mid){
+            if(root->left==nullptr)
+                root->left = new SegmentTreeNode(low, mid, 0);
+            update(root->left, pivot);
+        }
+        else{
+            if(root->right==nullptr)
+                root->right = new SegmentTreeNode(mid+1, high, 0);
+            update(root->right, pivot);
+        }
+        if(root->left!=nullptr && root->right!=nullptr){
+            root->count = root->left->count + root->right->count;
+        }
+        else if(root->left==nullptr && root->right!=nullptr){
+            root->count = root->right->count;
+        }
+        else if(root->left!=nullptr && root->right==nullptr){
+            root->count = root->left->count;
+        }
+        return;
+    }
+public:
+    int countRangeSum(vector<int>& nums, int lower, int upper) {
+        int ans=0, n=nums.size();
+        long tmp=0, minV=0, maxV=0, minVal=INT_MAX, maxVal=INT_MIN;
+        vector<long> prefixSum;
+        prefixSum.push_back(0);
+        for(int i=0; i<n; ++i){
+            if(nums[i]<minVal)
+                minVal=nums[i];
+            if(nums[i]>maxVal)
+                maxVal=nums[i];
+            tmp+=nums[i];
+            if(tmp<minV)
+                minV=tmp;
+            if(tmp>maxV)
+                maxV=tmp;
+            prefixSum.push_back(tmp);
+        }
+        if((maxVal<=0 && maxVal<lower) || (minVal>=0 && minVal>upper))
+            return 0;
+        minV=min(minV,minV-upper);
+        maxV=max(maxV,maxV-lower);
+        SegmentTreeNode* root = new SegmentTreeNode(minV, maxV, 0);
+        for(int i=0; i<=n; ++i){
+            ans+=queryTree(root,prefixSum[i]-upper,prefixSum[i]-lower);
+            update(root, prefixSum[i]);
+        }
+        return ans;
+    }
+};

@@ -1,0 +1,59 @@
+class Solution {
+public:
+    void build(vector<int>& seg, int index,int low , int high, int num)
+    {
+         if(low==high)
+         {
+             seg[index]  = seg[index]+1;
+             return ;
+         }
+        int mid = (low+high)/2;
+        if(num<=mid)
+        {
+            // left
+          build(seg, 2*index+1, low, mid, num);
+        }
+        else
+        {
+            // right
+            build(seg, 2*index+2, mid+1, high, num);
+        }
+        seg[index] = seg[2*index+1] + seg[2*index+2];
+    }
+    int query(vector<int>&seg , int index, int low, int high, int l, int r)
+    {
+  
+        if(low>=l && high<=r)
+        {
+            return seg[index];
+        }
+        if(high<l || low>r)
+        {
+            return 0;
+        }
+        int mid  = (low+high)/2;
+        return query(seg, 2*index+1 , low, mid, l,r)  + query(seg, 2*index+2, mid+1, high, l,r);
+        
+    }
+    vector<int> countSmaller(vector<int>& nums) 
+    {
+        for(int  i = 0;i<nums.size();i++)
+        {
+            nums[i] = nums[i] + 10001;
+        }
+         int maxx = 0;
+         int si = nums.size();
+         for(int  i= 0;i<si;i++)
+            maxx = max(maxx, nums[i]);
+        
+         vector<int>seg(4* maxx, 0);
+         vector<int>ans(si,0);
+        for(int i = si-1;i>=0;i--)
+        {
+            build(seg, 0,1,maxx, nums[i]);
+            ans[i] = query(seg, 0, 1, maxx, 1, nums[i]-1);
+        }
+        
+        return ans;
+    }
+};

@@ -1,0 +1,47 @@
+Given an integer array nums, return the number of reverse pairs in the array.
+
+A reverse pair is a pair (i, j) where 0 <= i < j < nums.length and nums[i] > 2 * nums[j].
+
+
+class Solution {
+public:
+    using ll=long long;
+    vector<int>bit;
+    const int N=1e5+10;
+    void update(int i,int val)
+    {
+        while(i<N)
+        {
+            bit[i]+=val;
+            i+=(i&-i);
+        }
+    }
+    int find(int i)
+    {
+        int sum=0;
+        while(i>0)
+        {
+            sum+=bit[i];
+            i-=(i&-i);
+        }
+        return sum;
+    }
+    int reversePairs(vector<int>& nums) 
+    {
+        bit=vector<int>(N,0);
+        int n=nums.size();
+        int count=0;
+        vector<ll>v(nums.begin(),nums.end());
+        for(int i=0;i<n;i++)
+        {
+            v.push_back(1ll*nums[i]*2);
+        }
+        sort(v.begin(),v.end());
+        for(int i=n-1;i>=0;i--)
+        {
+            count+=find(lower_bound(v.begin(),v.end(),nums[i])-v.begin());
+            update(lower_bound(v.begin(),v.end(),1ll*2*nums[i])-v.begin()+1,1);
+        }
+        return count;
+    }
+};
